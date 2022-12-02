@@ -6,10 +6,14 @@
 // Its primary job is to wrap existing implementations of such primitives,
 // such as those in package os, into shared public interfaces that
 // abstract the functionality, plus some other related primitives.
+// 包io提供了I/O原语的基本接口。
+// 它的主要工作是将此类原语的现有实现（例如 os 包中的那些实现）包装到
+// 抽象功能的共享公共接口以及一些其他相关原语中。
 //
 // Because these interfaces and primitives wrap lower-level operations with
 // various implementations, unless otherwise informed clients should not
 // assume they are safe for parallel execution.
+// 因为这些接口和原语用各种实现包装了较低级别的操作，除非另有通知，否则客户端不应假定它们可以安全地并行执行。
 package io
 
 import (
@@ -53,12 +57,16 @@ var ErrUnexpectedEOF = errors.New("unexpected EOF")
 var ErrNoProgress = errors.New("multiple Read calls return no data or error")
 
 // Reader is the interface that wraps the basic Read method.
+// Reader 是包装了基本Read方法的接口。
 //
 // Read reads up to len(p) bytes into p. It returns the number of bytes
 // read (0 <= n <= len(p)) and any error encountered. Even if Read
 // returns n < len(p), it may use all of p as scratch space during the call.
 // If some data is available but not len(p) bytes, Read conventionally
 // returns what is available instead of waiting for more.
+// Read 读取多达len(p)个自己到 p 。它返回读取的字节数(0 <= n <= len(p)) 以及任何遇到的错误。
+// 即使 Read 返回 n < len(p)，但在调用期间它可以使用整个 p 作为暂存空间。
+// 假如有一些数据是可用的但是长度没有len(p)个字节，Read 通常返回可用的数据而不是等待更多数据。
 //
 // When Read encounters an error or end-of-file condition after
 // successfully reading n > 0 bytes, it returns the number of
@@ -68,18 +76,27 @@ var ErrNoProgress = errors.New("multiple Read calls return no data or error")
 // a non-zero number of bytes at the end of the input stream may
 // return either err == EOF or err == nil. The next Read should
 // return 0, EOF.
+// 当 Read 在成功读取 n > 0 个字节后遇到了错误或到达了文件的结尾，它返回读取的字节数。
+// 它可以在当前调用中返回非nil错误，或者在下一次调用时返回错误且n为0。
+// 这种一般情况下的一个例子是，如果Reader在输入流末尾返回非0字节数，它可能返回err == EOF
+// 或 err == nil。下一次 Read 时应该返回 0，EOF。
 //
 // Callers should always process the n > 0 bytes returned before
 // considering the error err. Doing so correctly handles I/O errors
 // that happen after reading some bytes and also both of the
 // allowed EOF behaviors.
+// 在考虑错误err之前，调用方应始终处理返回的 n > 0 个字节。 这样做可以正确处理
+// 读取某些字节后发生的I/O错误以及两种允许的EOF行为（译注：即上面提到的两种方式）。
 //
 // Implementations of Read are discouraged from returning a
 // zero byte count with a nil error, except when len(p) == 0.
 // Callers should treat a return of 0 and nil as indicating that
 // nothing happened; in particular it does not indicate EOF.
+// 不鼓励Read的实现返回一个0字节的计数和一个nil错误，除非len(p) == 0。
+// 调用者应该将返回的0和nil看作什么也没有发生；特别的是它不表示EOF。
 //
 // Implementations must not retain p.
+// 实现不得保留 p 。（译注：即不能把p缓存下来）
 type Reader interface {
 	Read(p []byte) (n int, err error)
 }
