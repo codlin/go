@@ -102,27 +102,37 @@ type Reader interface {
 }
 
 // Writer is the interface that wraps the basic Write method.
+// Writer 是封装了基本Write方法的接口。
 //
 // Write writes len(p) bytes from p to the underlying data stream.
 // It returns the number of bytes written from p (0 <= n <= len(p))
 // and any error encountered that caused the write to stop early.
 // Write must return a non-nil error if it returns n < len(p).
 // Write must not modify the slice data, even temporarily.
+// Write 写把p的len(p)个字节写入到底层的数据流中。
+// 它返回写入的字节数（0 <= n <= len(p))，以及遇到的造成写入提前终止任何错误。
+// 如果 Write 返回的字节数n<len(p)，它必须返回一个非nil错误。
+// Write 不能修改切片 p 的数据，哪怕是暂时的。
 //
 // Implementations must not retain p.
+// 实现方不能保留 p 。
 type Writer interface {
 	Write(p []byte) (n int, err error)
 }
 
 // Closer is the interface that wraps the basic Close method.
+// Closer 是封装了基础Close方法的接口。
 //
 // The behavior of Close after the first call is undefined.
 // Specific implementations may document their own behavior.
+// 在第一次调用Close方法后再次调用它的行为是未定义的。
+// 具体的实现者可以记录它们自己的行为。
 type Closer interface {
 	Close() error
 }
 
 // Seeker is the interface that wraps the basic Seek method.
+// Seeker 是封装了基本Seek方法的接口。
 //
 // Seek sets the offset for the next Read or Write to offset,
 // interpreted according to whence:
@@ -132,11 +142,19 @@ type Closer interface {
 // (for example, offset = -2 specifies the penultimate byte of the file).
 // Seek returns the new offset relative to the start of the
 // file or an error, if any.
+// Seek 将下一次Read或Write的偏移量设置为offset，依据whence解释：
+// SeekStart 意思是相对于文件的开始；
+// SeekCurrent 意思是相对于当前偏移量；
+// SeekEnd 意思是相对于文件的末尾；
+// （例如，偏移量offset = -2 特指文件的倒数第二个字节）。
+// Seek 返回相对于起始文件的新的偏移量offset或者一个错误，如果有错误的话。
 //
 // Seeking to an offset before the start of the file is an error.
 // Seeking to any positive offset may be allowed, but if the new offset exceeds
 // the size of the underlying object the behavior of subsequent I/O operations
 // is implementation-dependent.
+// 在文件开始之前寻找偏移量是错误的。
+// 允许寻找任何正的偏移量，但是如果新的偏移量超过了底层对象的大小，则后续I/O操作的行为取决于实现方。
 type Seeker interface {
 	Seek(offset int64, whence int) (int64, error)
 }
@@ -194,81 +212,116 @@ type ReadWriteSeeker interface {
 }
 
 // ReaderFrom is the interface that wraps the ReadFrom method.
+// ReaderFrom 是包装了ReadFrom方法的接口。
 //
 // ReadFrom reads data from r until EOF or error.
 // The return value n is the number of bytes read.
 // Any error except EOF encountered during the read is also returned.
+// ReadFrom 从r读取数据直到出现EOF或错误。
+// 返回值 n 是读取的字节个数。
+// 读取过程中遇到的除 EOF 之外的任何错误也将返回（译注：即EOF错误不会被返回）。
 //
 // The Copy function uses ReaderFrom if available.
+// Copy 函数使用 ReaderFrom（如果可用）。
 type ReaderFrom interface {
 	ReadFrom(r Reader) (n int64, err error)
 }
 
 // WriterTo is the interface that wraps the WriteTo method.
+// WriterTo 是封装WriteTo方法的接口。
 //
 // WriteTo writes data to w until there's no more data to write or
 // when an error occurs. The return value n is the number of bytes
 // written. Any error encountered during the write is also returned.
+// WriteTo 写入数据到 w 直到没有更多的数据可写或者当有错误发生时。返回值 n 是
+// 已写入的字节大小。在写的过程中遇到的任何错误也会被返回。
 //
 // The Copy function uses WriterTo if available.
+// Copy 函数使用 WriterTo（如果可用）。
 type WriterTo interface {
 	WriteTo(w Writer) (n int64, err error)
 }
 
 // ReaderAt is the interface that wraps the basic ReadAt method.
+// ReaderAt 是包装基本ReadAt方法的接口。
 //
 // ReadAt reads len(p) bytes into p starting at offset off in the
 // underlying input source. It returns the number of bytes
 // read (0 <= n <= len(p)) and any error encountered.
+// ReadAt 从底层输入源的偏移off的位置开始读取len(p)个字节到 p 中。
+// 它返回读取的字节数 n (0 <= n <= len(p)) 和任何遇到的错误。
 //
 // When ReadAt returns n < len(p), it returns a non-nil error
 // explaining why more bytes were not returned. In this respect,
 // ReadAt is stricter than Read.
+// 当 ReadAt 返回 n < len(p)，它返回一个非nil错误来解释为什么没有更多的字节返回回来。
+// 在这方面，ReadAt比Read更加严格。
 //
 // Even if ReadAt returns n < len(p), it may use all of p as scratch
 // space during the call. If some data is available but not len(p) bytes,
 // ReadAt blocks until either all the data is available or an error occurs.
 // In this respect ReadAt is different from Read.
+// 即使 ReadAt 返回 n < len(p)，在调用过程中它也可以使用 p 的所有空间作为暂存空间。
+// 如果一些数据是可用的但是没有len(p)个字节数，ReadAt将会一直阻塞直到所需要的数据都
+// 准备好了或者遇到一个错误（译注：这点比Read函数严格，Read函数可以直接返回）。
+// 从这方面来说ReadAt和Read不同。
 //
 // If the n = len(p) bytes returned by ReadAt are at the end of the
 // input source, ReadAt may return either err == EOF or err == nil.
+// 如果 ReadAt 返回 n = len(p) 个字节时已经到达了输入源的末尾，那么它既可以返回
+// err == EOF 也可以返回 err == nil。
 //
 // If ReadAt is reading from an input source with a seek offset,
 // ReadAt should not affect nor be affected by the underlying
 // seek offset.
+// 如果 ReadAt 正在从具有位置偏移量的底层读取数据，那么ReadAt既不应该影响底层的位置
+// 偏移量，反之也不应该受到它的影响。
 //
 // Clients of ReadAt can execute parallel ReadAt calls on the
 // same input source.
+// ReadAt的客户端能在同样的输入源上并行的执行ReadAt调用。
 //
 // Implementations must not retain p.
+// 实现者不能保留 p 。
 type ReaderAt interface {
 	ReadAt(p []byte, off int64) (n int, err error)
 }
 
 // WriterAt is the interface that wraps the basic WriteAt method.
+// WriterAt 是包装基本WriteAt方法的接口。
 //
 // WriteAt writes len(p) bytes from p to the underlying data stream
 // at offset off. It returns the number of bytes written from p (0 <= n <= len(p))
 // and any error encountered that caused the write to stop early.
 // WriteAt must return a non-nil error if it returns n < len(p).
+// WriteAt 向底层数据源的off偏移量开始写入 len(p) 个字节。
+// 它返回从 p（0 <= n <= len(p)）写入的字节数以及造成写入提前终止的任何错误。
+// 如果写入的字节数 n < len(p) 那么 WriteAt 必须返回一个非nil错误。
 //
 // If WriteAt is writing to a destination with a seek offset,
 // WriteAt should not affect nor be affected by the underlying
 // seek offset.
+// 如果 WriteAt 正在向一个带了位置偏移量的目标写入时，WriteAt既不应该影响
+// 底层偏移量，反之也不应该受它的影响。
 //
 // Clients of WriteAt can execute parallel WriteAt calls on the same
 // destination if the ranges do not overlap.
+// 如果范围不重叠，WriteAt 的客户端可以在同一目标上执行并行 WriteAt 调用。
 //
 // Implementations must not retain p.
+// 实现者不能保留 p 。
 type WriterAt interface {
 	WriteAt(p []byte, off int64) (n int, err error)
 }
 
 // ByteReader is the interface that wraps the ReadByte method.
+// ByteReader 是包装了基本ReadByte方法的接口。
 //
 // ReadByte reads and returns the next byte from the input or
 // any error encountered. If ReadByte returns an error, no input
 // byte was consumed, and the returned byte value is undefined.
+// ReadByte 从输入源读取和返回下一个字节或者错误。如果返回错误，则没有输入字节
+// 被消费，并且返回的字节值是未定义的。
 //
 // ReadByte provides an efficient interface for byte-at-time
 // processing. A Reader that does not implement  ByteReader
