@@ -5,6 +5,9 @@
 // Package bufio implements buffered I/O. It wraps an io.Reader or io.Writer
 // object, creating another object (Reader or Writer) that also implements
 // the interface but provides buffering and some help for textual I/O.
+// 包 bufio 实施了缓存的I/O。它通过包装 io.Reader 或 io.Writer对象创建了另一个对象
+// （Reader或Writer），新对象同样实施了被包装对象的接口，但是为文本化的I/O提供了缓存
+// 和一些有用的帮助。
 package bufio
 
 import (
@@ -44,6 +47,8 @@ const maxConsecutiveEmptyReads = 100
 // NewReaderSize returns a new Reader whose buffer has at least the specified
 // size. If the argument io.Reader is already a Reader with large enough
 // size, it returns the underlying Reader.
+// NewReaderSize 返回一个长度至少是指定缓存大小的新Reader。
+// 如果参数io.Reader已经是Reader类型且缓存长度已经满足了要求，则直接返回这个io.Reader。
 func NewReaderSize(rd io.Reader, size int) *Reader {
 	// Is it already a Reader?
 	b, ok := rd.(*Reader)
@@ -102,6 +107,7 @@ func (b *Reader) fill() {
 	}
 
 	// Read new data: try a limited number of times.
+	// 如果读取为空，连续读空的最大次数为maxConsecutiveEmptyReads
 	for i := maxConsecutiveEmptyReads; i > 0; i-- {
 		n, err := b.rd.Read(b.buf[b.w:])
 		if n < 0 {
@@ -129,9 +135,13 @@ func (b *Reader) readErr() error {
 // being valid at the next read call. If Peek returns fewer than n bytes, it
 // also returns an error explaining why the read is short. The error is
 // ErrBufferFull if n is larger than b's buffer size.
+// Peek 返回下n个字节而不推进reader。字节在下一次读取调用时不再有效。
+// 如果 Peek 返回的字节数少于n，它需要返回一个错误来解释为什么读取少了。
+// 错误是 ErrBufferFull 的意思是n大于b的缓存长度。
 //
 // Calling Peek prevents a UnreadByte or UnreadRune call from succeeding
 // until the next read operation.
+// 调用Peek将会阻止UnreadByte或UnreadRune的调用直到下一次读取操作成功之前。
 func (b *Reader) Peek(n int) ([]byte, error) {
 	if n < 0 {
 		return nil, ErrNegativeCount
@@ -162,10 +172,13 @@ func (b *Reader) Peek(n int) ([]byte, error) {
 }
 
 // Discard skips the next n bytes, returning the number of bytes discarded.
+// Discard 跳过下n个字节，返回被丢弃的字节数。
 //
 // If Discard skips fewer than n bytes, it also returns an error.
 // If 0 <= n <= b.Buffered(), Discard is guaranteed to succeed without
 // reading from the underlying io.Reader.
+// 如果 Discard 跳过的字节数少于n，它也会返回一个错误。
+// 如果 0 <= n <= b.Buffered()，Discard确保成功而无需从底层io.Reader读取。
 func (b *Reader) Discard(n int) (discarded int, err error) {
 	if n < 0 {
 		return 0, ErrNegativeCount
@@ -205,6 +218,11 @@ func (b *Reader) Discard(n int) (discarded int, err error) {
 // To read exactly len(p) bytes, use io.ReadFull(b, p).
 // If the underlying Reader can return a non-zero count with io.EOF,
 // then this Read method can do so as well; see the [io.Reader] docs.
+// Read 读取数据放入p中，并返回读入到p中的字节数。
+// 最多从底层的Reader读取一次，因为底层字节数可能会小于p的长度。
+// 为了要准确读取len(p)的长度，请用io.ReadFull(b, p)。
+// 如果底层的Reader能返回非零的字节数和io.EOF错误，那么Read方法能够做的更好；
+// 具体见[io.Reader]的文档（译注：这个接口并没有强制Read的返回行为）。
 func (b *Reader) Read(p []byte) (n int, err error) {
 	n = len(p)
 	if n == 0 {
