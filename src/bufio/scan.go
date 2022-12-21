@@ -20,12 +20,21 @@ import (
 // functions are defined in this package for scanning a file into
 // lines, bytes, UTF-8-encoded runes, and space-delimited words. The
 // client may instead provide a custom split function.
+// Scanner 提供一个方便的接口来读取数据，例如以换行符分隔的文本行文件。
+// 对Scan方法的连续调用将遍历文件的“token”，跳过token之间的字节。
+// 标记的规范由类型为 SplitFunc 的split函数定义；
+// 默认的拆分函数将输入分成多行，并去除行终止符。
+// 此包中定义了拆分函数，用于将文件扫描成行、字节、UTF-8 编码符文和空格分隔的单词。
+// 客户端可以改为提供自定义拆分功能。
 //
 // Scanning stops unrecoverably at EOF, the first I/O error, or a token too
 // large to fit in the buffer. When a scan stops, the reader may have
 // advanced arbitrarily far past the last token. Programs that need more
 // control over error handling or large tokens, or must run sequential scans
 // on a reader, should use bufio.Reader instead.
+// 扫描在 EOF、第一个 I/O 错误或token太大而无法放入缓冲区时不可恢复地停止。
+// 当扫描停止时，reader 可能已经前进到超过最后一个标记的任意远处。
+// 需要更多地控制错误处理或大token的程序，或者必须在reader上运行顺序扫描的程序，应该改用 bufio.Reader。
 type Scanner struct {
 	r            io.Reader // The reader provided by the client.
 	split        SplitFunc // The function to split the tokens.
@@ -45,10 +54,15 @@ type Scanner struct {
 // data and a flag, atEOF, that reports whether the Reader has no more data
 // to give. The return values are the number of bytes to advance the input
 // and the next token to return to the user, if any, plus an error, if any.
+// SplitFunc 是用于标记输入的拆分函数的签名。
+// 参数是剩余未处理数据的初始子字符串和一个标志 atEOF，它报告 Reader 是否没有更多数据可提供。
+// 返回值是推进输入的字节数和返回给用户的下一个标记（如果有）加上错误（如果有）。
 //
 // Scanning stops if the function returns an error, in which case some of
 // the input may be discarded. If that error is ErrFinalToken, scanning
 // stops with no error.
+// 如果函数返回错误，则扫描停止，在这种情况下，一些输入可能会被丢弃。
+// 如果该错误是 ErrFinalToken，则扫描停止且没有错误。
 //
 // Otherwise, the Scanner advances the input. If the token is not nil,
 // the Scanner returns it to the user. If the token is nil, the
@@ -58,10 +72,16 @@ type Scanner struct {
 // scanning lines, a SplitFunc can return (0, nil, nil) to signal the
 // Scanner to read more data into the slice and try again with a
 // longer slice starting at the same point in the input.
+// 否则，Scanner 推进输入。如果返回值token不为nil，则 Scanner 将其返回给用户。
+// 如果返回值token为nil，则Scanner读取更多数据并继续扫描；如果没有更多数据——如果 atEOF 为真——扫描器返回。
+// 如果数据还没有包含完整的token，例如，如果它在扫描行时没有换行符，则 SplitFunc 可以返回 (0, nil, nil)
+// 以通知Scanner将更多数据读入切片并再次尝试使用更长的时间切片从输入中的同一点开始。
 //
 // The function is never called with an empty data slice unless atEOF
 // is true. If atEOF is true, however, data may be non-empty and,
 // as always, holds unprocessed text.
+// 除非 atEOF 为真，否则永远不会使用空数据切片调用该函数。
+// 但是，如果 atEOF 为真，则数据可能是非空的，并且一如既往地包含未处理的文本。
 type SplitFunc func(data []byte, atEOF bool) (advance int, token []byte, err error)
 
 // Errors returned by Scanner.
@@ -347,6 +367,9 @@ func dropCR(data []byte) []byte {
 // by one mandatory newline. In regular expression notation, it is `\r?\n`.
 // The last non-empty line of input will be returned even if it has no
 // newline.
+// ScanLines 是 Scanner 的一个拆分函数，它返回每一行文本，去除任何尾随的行尾标记。
+// 返回的行可能为空。行尾标记是一个可选的回车符，后跟一个强制换行符。在正则表达式中，它是“\r?\n”。
+// 输入的最后一个非空行即使没有换行也会被返回。
 func ScanLines(data []byte, atEOF bool) (advance int, token []byte, err error) {
 	if atEOF && len(data) == 0 {
 		return 0, nil, nil

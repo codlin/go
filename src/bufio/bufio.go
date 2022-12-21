@@ -734,7 +734,7 @@ func (b *Writer) Write(p []byte) (nn int, err error) {
 			b.Flush()
 		}
 		nn += n
-		p = p[n:]
+		p = p[n:] // 如果n == len(p)，则p[n:]为[]
 	}
 	if b.err != nil {
 		return nn, b.err
